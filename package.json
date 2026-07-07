@@ -1,0 +1,16 @@
+{
+  "name": "weight-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "심플한 체중·인바디 기록 앱",
+  "scripts": {
+    "copy:web": "node scripts/copy-web.mjs",
+    "sync": "npm run copy:web && cap sync android",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1"
+  }
+}

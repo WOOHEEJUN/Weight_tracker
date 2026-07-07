@@ -6,3 +6,11 @@ desktop.ini
 
 # Claude Code local settings (launch.json은 추적)
 .claude/settings.local.json
+
+# Node / Capacitor 빌드 산출물
+node_modules/
+www/
+*.apk
+
+# 안드로이드 네이티브 프로젝트 (npx cap add android 로 재생성)
+/android/
