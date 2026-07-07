@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">체중 기록</string>
+    <string name="title_activity_main">체중 기록</string>
+    <string name="package_name">com.wooheejun.weighttracker</string>
+    <string name="custom_url_scheme">com.wooheejun.weighttracker</string>
+</resources>

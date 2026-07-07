@@ -41,10 +41,7 @@ jobs:
       - name: Copy web assets
         run: npm run copy:web
 
-      - name: Add Android platform
-        run: npx cap add android
-
-      - name: Sync Capacitor
+      - name: Sync Capacitor (copy web into android project)
         run: npx cap sync android
 
       - name: Build debug APK
