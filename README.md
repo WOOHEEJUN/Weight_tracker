@@ -13,7 +13,17 @@
 - 다크모드 (시스템 자동 + 수동 토글)
 - **PWA**: 홈 화면에 설치, 오프라인 사용, 영구 저장
 
-## 사용
+## 안드로이드 앱 설치 (.apk)
+1. 폰 브라우저로 최신 APK 다운로드:
+   **[weight-tracker.apk](https://github.com/WOOHEEJUN/Weight_tracker/releases/download/app-latest/weight-tracker.apk)**
+   (전체 릴리스: [releases/app-latest](https://github.com/WOOHEEJUN/Weight_tracker/releases/tag/app-latest))
+2. 받은 파일을 열고 설치 → "출처를 알 수 없는 앱 설치"를 물어보면 허용
+3. 홈 화면 아이콘으로 실행. 인터넷 없이도 동작하고 데이터는 폰에 저장됩니다.
+
+APK는 GitHub Actions가 자동으로 빌드합니다. `index.html` 등을 고쳐 `main`에 푸시하면
+[워크플로](.github/workflows/build-apk.yml)가 새 APK를 만들어 위 링크에 갱신합니다.
+
+## 웹으로 사용 (설치 없이)
 1. 브라우저로 [https://wooheejun.github.io/Weight_tracker/](https://wooheejun.github.io/Weight_tracker/) 접속
 2. 폰: 브라우저 메뉴 → "홈 화면에 추가" (앱처럼 실행 · 오프라인 동작)
 3. 데이터는 이 기기에만 저장되므로, 가끔 ⋯ 메뉴에서 JSON 백업을 받아두세요.
