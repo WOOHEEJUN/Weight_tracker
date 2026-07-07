@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="체중">
+<title>체중 기록</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1a1d21;
+    --muted: #7a828c;
+    --line: #e4e7eb;
+    --accent: #3b82f6;
+    --accent-soft: #dbeafe;
+    --good: #16a34a;
+    --bad: #dc2626;
+    --dot: #94a3b8;
+    --ma: #3b82f6;
+    --goal: #16a34a;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --card: #181b21;
+      --text: #e6e9ee;
+      --muted: #8b94a0;
+      --line: #262b33;
+      --accent: #60a5fa;
+      --accent-soft: #1e293b;
+      --good: #4ade80;
+      --bad: #f87171;
+      --dot: #64748b;
+      --ma: #60a5fa;
+      --goal: #4ade80;
+      --shadow: none;
+    }
+  }
+  html[data-theme="light"] {
+    --bg:#f5f6f8;--card:#fff;--text:#1a1d21;--muted:#7a828c;--line:#e4e7eb;--accent:#3b82f6;--accent-soft:#dbeafe;--good:#16a34a;--bad:#dc2626;--dot:#94a3b8;--ma:#3b82f6;--goal:#16a34a;--shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  }
+  html[data-theme="dark"] {
+    --bg:#0f1115;--card:#181b21;--text:#e6e9ee;--muted:#8b94a0;--line:#262b33;--accent:#60a5fa;--accent-soft:#1e293b;--good:#4ade80;--bad:#f87171;--dot:#64748b;--ma:#60a5fa;--goal:#4ade80;--shadow:none;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-size: 15px; line-height: 1.5;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 700; }
+  .icon-btn {
+    background: var(--card); border: 1px solid var(--line); color: var(--text);
+    width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 17px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:active { transform: scale(.94); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; box-shadow: var(--shadow); }
+  .stat .label { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .stat .value { font-size: 22px; font-weight: 700; letter-spacing: -.5px; }
+  .stat .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .up { color: var(--bad); } .down { color: var(--good); }
+  .progress-outer { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .progress-inner { height: 100%; background: var(--goal); border-radius: 99px; transition: width .3s; }
+  .filters { display: flex; gap: 6px; margin-bottom: 12px; }
+  .filters button {
+    flex: 1; padding: 7px 0; border: 1px solid var(--line); background: var(--card); color: var(--muted);
+    border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .filters button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  svg.chart { width: 100%; display: block; overflow: visible; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 10px; font-size: 14px; }
+  .row-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  input, select {
+    background: var(--bg); border: 1px solid var(--line); color: var(--text);
+    border-radius: 9px; padding: 9px 10px; font-size: 15px; font-family: inherit; width: 100%;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 9px;
+    padding: 10px 16px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .section-title { display: flex; align-items: center; justify-content: space-between; margin: 4px 2px 10px; }
+  .section-title h2 { font-size: 15px; margin: 0; font-weight: 700; }
+  .section-title .link { font-size: 13px; color: var(--accent); cursor: pointer; background: none; border: none; font-family: inherit; }
+  ul.list { list-style: none; margin: 0; padding: 0; }
+  ul.list li { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--line); }
+  ul.list li:last-child { border-bottom: none; }
+  .li-date { font-size: 13px; color: var(--muted); width: 78px; flex-shrink: 0; }
+  .li-main { font-weight: 600; }
+  .li-delta { font-size: 12px; }
+  .li-memo { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .li-del { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px 6px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tabs button { flex:1; padding: 9px 0; border:1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 10px; font-weight:600; cursor:pointer; font-size:14px; }
+  .tabs button.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  dialog {
+    border: none; border-radius: 16px; padding: 0; background: var(--card); color: var(--text);
+    max-width: 420px; width: calc(100% - 32px); box-shadow: 0 10px 40px rgba(0,0,0,.3);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  .dlg-body { padding: 20px; }
+  .dlg-body h3 { margin: 0 0 14px; font-size: 17px; }
+  .dlg-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 99px;
+    font-size: 14px; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>체중 기록</h1>
+    <div style="display:flex;gap:8px">
+      <button class="icon-btn" id="installBtn" title="앱 설치" style="display:none;width:auto;padding:0 12px;font-size:14px;gap:4px">⬇︎ 설치</button>
+      <button class="icon-btn" id="themeBtn" title="테마">◐</button>
+      <button class="icon-btn" id="menuBtn" title="설정·백업">⋯</button>
+    </div>
+  </header>
+
+  <div id="app"></div>
+</div>
+
+<!-- 프로필 설정 -->
+<dialog id="profileDlg">
+  <div class="dlg-body">
+    <h3>기본 정보</h3>
+    <div class="grid2">
+      <div class="field"><label>키 (cm)</label><input type="number" id="pfHeight" inputmode="decimal" placeholder="예: 175"></div>
+      <div class="field"><label>목표 체중 (kg, 선택)</label><input type="number" id="pfGoal" inputmode="decimal" placeholder="없으면 비움"></div>
+    </div>
+    <p class="hint">목표를 비워두면 진행률 표시가 나오지 않아요.</p>
+    <div class="dlg-actions">
+      <button class="btn ghost" id="pfCancel">취소</button>
+      <button class="btn" id="pfSave">저장</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 메뉴 -->
+<dialog id="menuDlg">
+  <div class="dlg-body">
+    <h3>설정 · 백업</h3>
+    <div id="storageStatus" style="font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.45"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn secondary" id="mEditProfile">기본 정보 수정</button>
+      <button class="btn secondary" id="mExportJson">전체 백업 내보내기 (JSON)</button>
+      <button class="btn secondary" id="mExportCsv">체중 기록 내보내기 (CSV)</button>
+      <button class="btn secondary" id="mImport">백업 불러오기 (JSON)</button>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+      <button class="btn ghost" id="mReset" style="color:var(--bad)">전체 데이터 삭제</button>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn ghost" id="mClose">닫기</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+  const KEY = "weightTracker.v1";
+  const $ = (s, el=document) => el.querySelector(s);
+
+  const todayStr = () => {
+    const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0,10);
+  };
+  const parseDate = s => new Date(s + "T00:00:00");
+  const dayDiff = (a,b) => Math.round((parseDate(a)-parseDate(b))/86400000);
+  const fmtDate = s => { const p = s.split("-"); return `${+p[1]}/${+p[2]}`; };
+  const round1 = n => Math.round(n*10)/10;
+
+  // ---- state ----
+  let state = load();
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e){}
+    return { profile: { height: null, goalWeight: null }, weights: [], inbody: [] };
+  }
+  function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+  let period = "all";   // 1w 1m 3m all
+  let tab = "weight";   // weight | inbody
+
+  // ---- theme ----
+  const themeBtn = $("#themeBtn");
+  function applyTheme() {
+    const t = localStorage.getItem("wt.theme");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+  }
+  themeBtn.onclick = () => {
+    const cur = localStorage.getItem("wt.theme");
+    const isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    localStorage.setItem("wt.theme", isDark ? "light" : "dark");
+    applyTheme();
+  };
+  applyTheme();
+
+  // ---- toast ----
+  let toastT;
+  function toast(msg) {
+    const el = $("#toast"); el.textContent = msg; el.classList.add("show");
+    clearTimeout(toastT); toastT = setTimeout(()=>el.classList.remove("show"), 1800);
+  }
+
+  // ---- derived helpers ----
+  function sortedWeights() {
+    return [...state.weights].sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  }
+  // trailing 7-day moving average, aligned to each entry's date
+  function withMA(arr, windowDays=7) {
+    return arr.map((pt, i) => {
+      let sum=0, n=0;
+      for (let j=0;j<=i;j++) {
+        if (dayDiff(pt.date, arr[j].date) <= windowDays-1) { sum+=arr[j].weight; n++; }
+      }
+      return { ...pt, ma: n ? sum/n : pt.weight };
+    });
+  }
+  function filterByPeriod(arr) {
+    if (period === "all" || arr.length === 0) return arr;
+    const days = period==="1w"?7 : period==="1m"?31 : 92;
+    const last = arr[arr.length-1].date;
+    return arr.filter(p => dayDiff(last, p.date) <= days);
+  }
+
+  // ================= RENDER =================
+  function render() {
+    const app = $("#app");
+    if (!state.profile.height) { renderOnboard(app); return; }
+    app.innerHTML = "";
+    app.appendChild(renderTabs());
+    if (tab === "weight") {
+      app.appendChild(renderStats());
+      app.appendChild(renderChartCard());
+      app.appendChild(renderWeightInput());
+      app.appendChild(renderWeightList());
+    } else {
+      app.appendChild(renderInbodyInput());
+      app.appendChild(renderInbodyList());
+    }
+  }
+
+  function renderOnboard(app) {
+    app.innerHTML = `<div class="card"><div style="text-align:center;padding:12px 4px 4px">
+      <div style="font-size:40px;margin-bottom:8px">⚖️</div>
+      <h2 style="margin:0 0 6px;font-size:18px">시작하기</h2>
+      <p style="color:var(--muted);margin:0 0 18px;font-size:14px">키만 입력하면 바로 기록할 수 있어요.<br>목표 체중은 선택이에요.</p>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>키 (cm)</label><input type="number" id="obHeight" inputmode="decimal" placeholder="예: 175"></div>
+        <div class="field"><label>목표 체중 (kg, 선택)</label><input type="number" id="obGoal" inputmode="decimal" placeholder="선택"></div>
+      </div>
+      <button class="btn" id="obStart" style="width:100%;margin-top:16px">시작</button>
+    </div>`;
+    $("#obStart").onclick = () => {
+      const h = parseFloat($("#obHeight").value);
+      if (!h || h<80 || h>250) { toast("키를 확인해 주세요"); return; }
+      state.profile.height = h;
+      const g = parseFloat($("#obGoal").value);
+      state.profile.goalWeight = g>0 ? g : null;
+      save(); render();
+    };
+  }
+
+  function renderTabs() {
+    const d = document.createElement("div");
+    d.className = "tabs";
+    d.innerHTML = `
+      <button data-t="weight" class="${tab==='weight'?'active':''}">체중</button>
+      <button data-t="inbody" class="${tab==='inbody'?'active':''}">인바디</button>`;
+    d.querySelectorAll("button").forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
+    return d;
+  }
+
+  function renderStats() {
+    const arr = sortedWeights();
+    const wrap = document.createElement("div");
+    wrap.className = "stats";
+    const height = state.profile.height;
+    const goal = state.profile.goalWeight;
+
+    if (arr.length === 0) {
+      wrap.innerHTML = `<div class="stat" style="grid-column:1/-1"><div class="label">아직 기록 없음</div><div class="value" style="font-size:16px;font-weight:600;color:var(--muted)">아래에서 첫 체중을 기록해 보세요</div></div>`;
+      return wrap;
+    }
+    const cur = arr[arr.length-1];
+    const bmi = cur.weight / Math.pow(height/100, 2);
+    const bmiCat = bmi<18.5?"저체중":bmi<23?"정상":bmi<25?"과체중":"비만";
+
+    // 7-day change: compare current to the nearest entry ~7 days before
+    let weekDelta = null;
+    for (let i=arr.length-2;i>=0;i--) {
+      if (dayDiff(cur.date, arr[i].date) >= 7) { weekDelta = cur.weight - arr[i].weight; break; }
+    }
+    if (weekDelta===null && arr.length>1) weekDelta = cur.weight - arr[0].weight;
+
+    const start = arr[0];
+    const totalDelta = cur.weight - start.weight;
+
+    function statCard(label, value, sub) {
+      return `<div class="stat"><div class="label">${label}</div><div class="value">${value}</div>${sub?`<div class="sub">${sub}</div>`:""}</div>`;
+    }
+    const deltaHtml = d => {
+      if (d===null) return '<span class="sub">–</span>';
+      const cls = d>0?"up":d<0?"down":"";
+      const sign = d>0?"+":"";
+      return `<span class="${cls}">${sign}${round1(d)}kg</span>`;
+    };
+
+    let html = "";
+    html += statCard("현재 체중", `${round1(cur.weight)}<span style="font-size:14px;font-weight:500;color:var(--muted)"> kg</span>`, `${fmtDate(cur.date)} 기록`);
+    html += statCard("BMI", `${bmi.toFixed(1)}`, bmiCat);
+    html += statCard("최근 7일", deltaHtml(weekDelta), `시작 대비 ${totalDelta>0?"+":""}${round1(totalDelta)}kg`);
+
+    if (goal) {
+      const remain = cur.weight - goal;
+      const totalToLose = start.weight - goal;
+      let pct = 0;
+      if (Math.abs(totalToLose) > 0.01) pct = Math.max(0, Math.min(100, ((start.weight-cur.weight)/totalToLose)*100));
+      const reached = (totalToLose>0 && cur.weight<=goal) || (totalToLose<0 && cur.weight>=goal);
+      html += `<div class="stat"><div class="label">목표까지</div><div class="value">${reached?"🎉 달성!":`${round1(Math.abs(remain))}<span style="font-size:14px;font-weight:500;color:var(--muted)"> kg</span>`}</div><div class="progress-outer"><div class="progress-inner" style="width:${reached?100:pct.toFixed(0)}%"></div></div></div>`;
+    } else {
+      html += statCard("목표", `<span style="font-size:15px;font-weight:500;color:var(--muted)">미설정</span>`, `⋯ 메뉴에서 설정`);
+    }
+    wrap.innerHTML = html;
+    return wrap;
+  }
+
+  function renderChartCard() {
+    const card = document.createElement("div");
+    card.className = "card";
+    const filters = document.createElement("div");
+    filters.className = "filters";
+    [["1w","1주"],["1m","1개월"],["3m","3개월"],["all","전체"]].forEach(([k,label])=>{
+      const b = document.createElement("button");
+      b.textContent = label; if (period===k) b.className="active";
+      b.onclick = () => { period=k; render(); };
+      filters.appendChild(b);
+    });
+    card.appendChild(filters);
+    card.appendChild(buildChart());
+    const legend = document.createElement("div");
+    legend.className = "legend";
+    legend.innerHTML = `<span><span class="swatch" style="background:var(--dot)"></span>실제</span><span><span class="swatch" style="background:var(--ma)"></span>7일 평균</span>${state.profile.goalWeight?`<span><span class="swatch" style="background:var(--goal)"></span>목표</span>`:""}`;
+    card.appendChild(legend);
+    return card;
+  }
+
+  function buildChart() {
+    const NS = "http://www.w3.org/2000/svg";
+    const all = withMA(sortedWeights());
+    const data = filterByPeriod(all);
+    const W = 600, H = 260, padL = 38, padR = 12, padT = 14, padB = 24;
+
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class","chart");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("preserveAspectRatio","none");
+
+    if (data.length === 0) {
+      const t = document.createElementNS(NS,"text");
+      t.setAttribute("x",W/2); t.setAttribute("y",H/2);
+      t.setAttribute("text-anchor","middle"); t.setAttribute("fill","var(--muted)"); t.setAttribute("font-size","14");
+      t.textContent = "이 기간에 기록이 없어요";
+      svg.appendChild(t);
+      svg.style.height = "180px";
+      return svg;
+    }
+
+    const goal = state.profile.goalWeight;
+    const weights = data.map(d=>d.weight);
+    let lo = Math.min(...weights), hi = Math.max(...weights);
+    if (goal) { lo = Math.min(lo, goal); hi = Math.max(hi, goal); }
+    const span = hi - lo || 1;
+    lo -= span*0.15 + 0.3; hi += span*0.15 + 0.3;
+
+    const minD = parseDate(data[0].date).getTime();
+    const maxD = parseDate(data[data.length-1].date).getTime();
+    const dSpan = (maxD - minD) || 1;
+    const x = d => padL + ((parseDate(d).getTime()-minD)/dSpan) * (W-padL-padR);
+    const y = w => padT + (1-(w-lo)/(hi-lo)) * (H-padT-padB);
+
+    // y gridlines
+    const ticks = 4;
+    for (let i=0;i<=ticks;i++){
+      const val = lo + (hi-lo)*i/ticks;
+      const yy = y(val);
+      const gl = document.createElementNS(NS,"line");
+      gl.setAttribute("x1",padL); gl.setAttribute("x2",W-padR);
+      gl.setAttribute("y1",yy); gl.setAttribute("y2",yy);
+      gl.setAttribute("stroke","var(--line)"); gl.setAttribute("stroke-width","1");
+      svg.appendChild(gl);
+      const lbl = document.createElementNS(NS,"text");
+      lbl.setAttribute("x",padL-6); lbl.setAttribute("y",yy+3);
+      lbl.setAttribute("text-anchor","end"); lbl.setAttribute("fill","var(--muted)"); lbl.setAttribute("font-size","10");
+      lbl.textContent = round1(val);
+      svg.appendChild(lbl);
+    }
+
+    // goal line
+    if (goal && goal>=lo && goal<=hi) {
+      const gy = y(goal);
+      const line = document.createElementNS(NS,"line");
+      line.setAttribute("x1",padL); line.setAttribute("x2",W-padR);
+      line.setAttribute("y1",gy); line.setAttribute("y2",gy);
+      line.setAttribute("stroke","var(--goal)"); line.setAttribute("stroke-width","1.5"); line.setAttribute("stroke-dasharray","5 4");
+      svg.appendChild(line);
+    }
+
+    // MA line
+    if (data.length>1) {
+      let dPath = "";
+      data.forEach((pt,i)=>{ dPath += (i?"L":"M") + x(pt.date).toFixed(1) + " " + y(pt.ma).toFixed(1) + " "; });
+      const path = document.createElementNS(NS,"path");
+      path.setAttribute("d",dPath); path.setAttribute("fill","none");
+      path.setAttribute("stroke","var(--ma)"); path.setAttribute("stroke-width","2.5");
+      path.setAttribute("stroke-linejoin","round"); path.setAttribute("stroke-linecap","round");
+      svg.appendChild(path);
+    }
+
+    // actual points (+ thin connecting line)
+    if (data.length>1) {
+      let dp = "";
+      data.forEach((pt,i)=>{ dp += (i?"L":"M") + x(pt.date).toFixed(1) + " " + y(pt.weight).toFixed(1) + " "; });
+      const pl = document.createElementNS(NS,"path");
+      pl.setAttribute("d",dp); pl.setAttribute("fill","none");
+      pl.setAttribute("stroke","var(--dot)"); pl.setAttribute("stroke-width","1"); pl.setAttribute("opacity","0.4");
+      svg.appendChild(pl);
+    }
+    data.forEach(pt=>{
+      const c = document.createElementNS(NS,"circle");
+      c.setAttribute("cx",x(pt.date)); c.setAttribute("cy",y(pt.weight)); c.setAttribute("r","3");
+      c.setAttribute("fill","var(--dot)");
+      const title = document.createElementNS(NS,"title");
+      title.textContent = `${pt.date}  ${round1(pt.weight)}kg${pt.memo?"  · "+pt.memo:""}`;
+      c.appendChild(title);
+      svg.appendChild(c);
+    });
+
+    // x labels (first, mid, last)
+    const xlabIdx = data.length<=2 ? data.map((_,i)=>i) : [0, Math.floor(data.length/2), data.length-1];
+    [...new Set(xlabIdx)].forEach(i=>{
+      const pt = data[i];
+      const t = document.createElementNS(NS,"text");
+      t.setAttribute("x",x(pt.date)); t.setAttribute("y",H-6);
+      t.setAttribute("text-anchor", i===0?"start":i===data.length-1?"end":"middle");
+      t.setAttribute("fill","var(--muted)"); t.setAttribute("font-size","10");
+      t.textContent = fmtDate(pt.date);
+      svg.appendChild(t);
+    });
+
+    return svg;
+  }
+
+  function renderWeightInput() {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="section-title"><h2>기록 추가</h2></div>
+      <div class="row-form">
+        <div class="field" style="flex:1 1 120px"><label>날짜</label><input type="date" id="wDate"></div>
+        <div class="field" style="flex:1 1 90px"><label>체중 (kg)</label><input type="number" id="wVal" inputmode="decimal" step="0.1" placeholder="0.0"></div>
+        <div class="field" style="flex:2 1 100%"><label>메모 (선택)</label><input type="text" id="wMemo" placeholder="예: 회식, 야식, 공복"></div>
+        <button class="btn" id="wAdd" style="flex:1 1 100%">추가</button>
+      </div>`;
+    $("#wDate", card).value = todayStr();
+    $("#wAdd", card).onclick = () => {
+      const date = $("#wDate", card).value;
+      const val = parseFloat($("#wVal", card).value);
+      if (!date) { toast("날짜를 선택하세요"); return; }
+      if (!val || val<20 || val>400) { toast("체중을 확인해 주세요"); return; }
+      const memo = $("#wMemo", card).value.trim();
+      const existing = state.weights.find(w=>w.date===date);
+      if (existing) { existing.weight = val; existing.memo = memo; toast("같은 날짜 기록을 수정했어요"); }
+      else { state.weights.push({ date, weight: val, memo }); toast("기록했어요"); }
+      save(); render();
+    };
+    return card;
+  }
+
+  function renderWeightList() {
+    const arr = sortedWeights().reverse();
+    const card = document.createElement("div");
+    card.className = "card";
+    if (arr.length===0) { card.innerHTML = `<div class="empty">아직 체중 기록이 없어요</div>`; return card; }
+    const title = document.createElement("div");
+    title.className = "section-title";
+    title.innerHTML = `<h2>기록 (${arr.length})</h2>`;
+    card.appendChild(title);
+    const ul = document.createElement("ul"); ul.className="list";
+    arr.forEach((w,idx)=>{
+      const prev = arr[idx+1]; // older
+      let delta = "";
+      if (prev) { const d = w.weight - prev.weight; const cls=d>0?"up":d<0?"down":""; delta = `<span class="li-delta ${cls}">${d>0?"+":""}${round1(d)}</span>`; }
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="li-date">${w.date.slice(5).replace("-","/")}</span>
+        <span class="li-main">${round1(w.weight)}kg</span>${delta}
+        <span class="li-memo">${w.memo?escapeHtml(w.memo):""}</span>
+        <button class="li-del" title="삭제">✕</button>`;
+      $(".li-del", li).onclick = () => {
+        state.weights = state.weights.filter(x=>x.date!==w.date);
+        save(); render();
+      };
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    return card;
+  }
+
+  // ---- inbody ----
+  function renderInbodyInput() {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="section-title"><h2>인바디 기록 추가</h2></div>
+      <div class="grid2" style="margin-bottom:10px">
+        <div class="field"><label>날짜</label><input type="date" id="ibDate"></div>
+        <div class="field"><label>체중 (kg, 선택)</label><input type="number" id="ibW" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label>골격근량 (kg)</label><input type="number" id="ibSmm" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label>체지방률 (%)</label><input type="number" id="ibBfp" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label>체지방량 (kg)</label><input type="number" id="ibBfm" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label>메모 (선택)</label><input type="text" id="ibMemo" placeholder="측정 장소 등"></div>
+      </div>
+      <button class="btn" id="ibAdd" style="width:100%">추가</button>`;
+    $("#ibDate", card).value = todayStr();
+    $("#ibAdd", card).onclick = () => {
+      const date = $("#ibDate", card).value;
+      if (!date) { toast("날짜를 선택하세요"); return; }
+      const num = id => { const v=parseFloat($(id,card).value); return isNaN(v)?null:v; };
+      const rec = { date, weight:num("#ibW"), smm:num("#ibSmm"), bfp:num("#ibBfp"), bfm:num("#ibBfm"), memo:$("#ibMemo",card).value.trim() };
+      if (rec.weight===null&&rec.smm===null&&rec.bfp===null&&rec.bfm===null) { toast("값을 하나 이상 입력하세요"); return; }
+      const ex = state.inbody.find(x=>x.date===date);
+      if (ex) { Object.assign(ex, rec); toast("같은 날짜 기록을 수정했어요"); }
+      else { state.inbody.push(rec); toast("기록했어요"); }
+      save(); render();
+    };
+    return card;
+  }
+
+  function renderInbodyList() {
+    const arr = [...state.inbody].sort((a,b)=>a.date<b.date?1:-1);
+    const card = document.createElement("div");
+    card.className = "card";
+    if (arr.length===0) { card.innerHTML = `<div class="empty">인바디 기록이 없어요.<br><span style="font-size:13px">측정했을 때만 따로 남겨두는 용도예요.</span></div>`; return card; }
+    const title = document.createElement("div"); title.className="section-title";
+    title.innerHTML = `<h2>인바디 (${arr.length})</h2>`; card.appendChild(title);
+    const ul = document.createElement("ul"); ul.className="list";
+    arr.forEach(r=>{
+      const parts = [];
+      if (r.weight!=null) parts.push(`${round1(r.weight)}kg`);
+      if (r.smm!=null) parts.push(`골격근 ${round1(r.smm)}`);
+      if (r.bfp!=null) parts.push(`체지방 ${round1(r.bfp)}%`);
+      if (r.bfm!=null) parts.push(`지방량 ${round1(r.bfm)}`);
+      const li = document.createElement("li");
+      li.style.flexWrap = "wrap";
+      li.innerHTML = `<span class="li-date">${r.date.slice(5).replace("-","/")}</span>
+        <span style="font-size:14px">${parts.join(" · ")}</span>
+        <button class="li-del" title="삭제">✕</button>
+        ${r.memo?`<div class="li-memo" style="flex-basis:100%;padding-left:78px">${escapeHtml(r.memo)}</div>`:""}`;
+      $(".li-del", li).onclick = () => { state.inbody = state.inbody.filter(x=>x.date!==r.date); save(); render(); };
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    return card;
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+  // ================= MENU / BACKUP =================
+  const menuDlg = $("#menuDlg"), profileDlg = $("#profileDlg");
+  $("#menuBtn").onclick = () => { updateStorageStatus(); menuDlg.showModal(); };
+  $("#mClose").onclick = () => menuDlg.close();
+
+  $("#mEditProfile").onclick = () => {
+    menuDlg.close();
+    $("#pfHeight").value = state.profile.height ?? "";
+    $("#pfGoal").value = state.profile.goalWeight ?? "";
+    profileDlg.showModal();
+  };
+  $("#pfCancel").onclick = () => profileDlg.close();
+  $("#pfSave").onclick = () => {
+    const h = parseFloat($("#pfHeight").value);
+    if (!h || h<80 || h>250) { toast("키를 확인해 주세요"); return; }
+    state.profile.height = h;
+    const g = parseFloat($("#pfGoal").value);
+    state.profile.goalWeight = g>0 ? g : null;
+    save(); profileDlg.close(); render();
+  };
+
+  function download(filename, text, type){
+    const blob = new Blob([text], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url; a.download=filename; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+  function markBackup(){ localStorage.setItem("wt.lastBackup", todayStr()); }
+  $("#mExportJson").onclick = () => {
+    download(`weight-backup-${todayStr()}.json`, JSON.stringify(state,null,2), "application/json");
+    markBackup(); updateStorageStatus(); toast("백업 파일을 저장했어요");
+  };
+  $("#mExportCsv").onclick = () => {
+    const rows = [["date","weight_kg","memo"]];
+    sortedWeights().forEach(w=>rows.push([w.date, w.weight, (w.memo||"").replace(/"/g,'""')]));
+    const csv = rows.map(r=>r.map(c=>/[",\n]/.test(String(c))?`"${c}"`:c).join(",")).join("\n");
+    download(`weight-${todayStr()}.csv`, "﻿"+csv, "text/csv");
+    markBackup(); toast("CSV로 저장했어요");
+  };
+  $("#mImport").onclick = () => $("#importFile").click();
+  $("#importFile").onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const obj = JSON.parse(reader.result);
+        if (!obj.profile || !Array.isArray(obj.weights)) throw new Error("형식 오류");
+        if (!Array.isArray(obj.inbody)) obj.inbody = [];
+        if (!confirm("현재 데이터를 이 백업으로 덮어쓸까요?")) return;
+        state = obj; save(); menuDlg.close(); render(); toast("불러왔어요");
+      } catch(err){ toast("파일을 읽을 수 없어요"); }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  };
+  $("#mReset").onclick = () => {
+    if (!confirm("모든 기록을 삭제할까요? 되돌릴 수 없어요.")) return;
+    if (!confirm("정말 삭제할까요? 백업을 먼저 받아두는 걸 권장해요.")) return;
+    state = { profile:{height:null,goalWeight:null}, weights:[], inbody:[] };
+    save(); menuDlg.close(); render(); toast("초기화했어요");
+  };
+
+  // ================= PWA / 영속성 =================
+  let persistGranted = false;
+  async function requestPersist() {
+    try {
+      if (navigator.storage && navigator.storage.persisted) {
+        persistGranted = await navigator.storage.persisted();
+        if (!persistGranted && navigator.storage.persist) {
+          persistGranted = await navigator.storage.persist();
+        }
+      }
+    } catch(e){}
+  }
+  async function updateStorageStatus() {
+    const el = $("#storageStatus"); if (!el) return;
+    let persisted = false, usage = "";
+    try {
+      if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted();
+      if (navigator.storage && navigator.storage.estimate) {
+        const est = await navigator.storage.estimate();
+        if (est.usage != null) usage = ` · 사용 ${(est.usage/1024).toFixed(0)}KB`;
+      }
+    } catch(e){}
+    const wCount = state.weights.length, iCount = state.inbody.length;
+    const last = localStorage.getItem("wt.lastBackup");
+    let backupLine;
+    if (last) {
+      const days = dayDiff(todayStr(), last);
+      backupLine = days<=0 ? "마지막 백업: 오늘" : `마지막 백업: ${days}일 전`;
+    } else {
+      backupLine = "백업한 적 없음 — 가끔 내보내두면 안전해요";
+    }
+    el.innerHTML =
+      `${persisted ? "🔒 영구 저장 켜짐 (브라우저 정리에도 안 지워짐)" : "⚠️ 영구 저장 꺼짐 — 홈 화면에 설치하면 켜져요"}${usage}<br>`+
+      `기록 ${wCount}개 · 인바디 ${iCount}개<br>${backupLine}`;
+  }
+
+  // 오래 백업 안 했으면 부드럽게 알림
+  function maybeBackupReminder() {
+    const last = localStorage.getItem("wt.lastBackup");
+    if (state.weights.length < 5) return;
+    const days = last ? dayDiff(todayStr(), last) : 999;
+    if (days >= 14) setTimeout(()=>toast("백업한 지 오래됐어요 · ⋯메뉴에서 내보내기"), 1200);
+  }
+
+  // 설치 버튼 (Android/데스크톱 Chrome)
+  let deferredPrompt = null;
+  const installBtn = $("#installBtn");
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); deferredPrompt = e; installBtn.style.display = "inline-flex";
+  });
+  installBtn.onclick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null; installBtn.style.display = "none";
+  };
+  window.addEventListener("appinstalled", () => { installBtn.style.display = "none"; toast("설치됐어요 🎉"); });
+
+  // 서비스워커 등록 (오프라인)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    });
+  }
+
+  requestPersist();
+  render();
+  maybeBackupReminder();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+
+# Claude Code local settings (launch.json은 추적)
+.claude/settings.local.json
